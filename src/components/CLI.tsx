@@ -57,10 +57,10 @@ export default function CLIComponent({ onExecute }: CLIComponentProps) {
   };
 
   const agentOptions: { value: AgentType | 'godfather'; label: string }[] = [
-    { value: 'godfather', label: 'Godfather' },
-    { value: 'openclaw', label: 'OpenClaw' },
-    { value: 'autogpt', label: 'AutoGPT' },
-    { value: 'plandex', label: 'Plandex' },
+    { value: 'godfather', label: 'Godfather Coordinator' },
+    { value: 'openclaw', label: 'Godfather Researcher' },
+    { value: 'autogpt', label: 'Godfather Architect' },
+    { value: 'plandex', label: 'Godfather Syndicate' },
   ];
 
   const getLogColor = (level: string) => {

@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import './globals.css';
+import { ToastProvider } from '@/components/Toast';
 
 export const metadata: Metadata = {
   title: 'Digital Godfather | Core Control Unit',
@@ -17,6 +18,7 @@ export default function RootLayout({
         <div className="min-h-screen bg-gradient-to-b from-obsidian-900 to-obsidian-800">
           {children}
         </div>
+        <ToastProvider />
       </body>
     </html>
   );

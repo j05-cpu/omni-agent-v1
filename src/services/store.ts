@@ -57,10 +57,9 @@ export const useGodfatherStore = create<GodfatherState>((set, get) => ({
   
   // Initial Agent Status State
   agentStatuses: {
-    'godfather-001': 'running',
-    'openclaw-001': 'idle',
-    'autogpt-001': 'idle',
-    'plandex-001': 'idle',
+    'researcher-001': 'idle',
+    'architect-001': 'idle',
+    'syndicate-001': 'idle',
   },
   setAgentStatus: (agentId, status) => set((state) => ({
     agentStatuses: { ...state.agentStatuses, [agentId]: status },
@@ -74,20 +73,20 @@ export const useGodfatherStore = create<GodfatherState>((set, get) => ({
     status: 'running',
     children: [
       {
-        id: 'openclaw',
-        label: 'OpenClaw',
+        id: 'researcher',
+        label: 'Godfather Researcher',
         type: 'agent',
         status: 'idle',
       },
       {
-        id: 'autogpt',
-        label: 'AutoGPT',
+        id: 'architect',
+        label: 'Godfather Architect',
         type: 'agent',
         status: 'idle',
       },
       {
-        id: 'plandex',
-        label: 'Plandex',
+        id: 'syndicate',
+        label: 'Godfather Syndicate',
         type: 'agent',
         status: 'idle',
       },
