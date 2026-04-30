@@ -19,6 +19,7 @@ import { saveToAgentMemory, saveSyndicateExecution, updateSyndicateExecution } f
 import { chatWithOllama, checkOllamaStatus } from '@/lib/ai/ollama';
 import { chatWithGemini, checkGeminiStatus } from '@/lib/ai/gemini';
 import { chatWithOpenRouter, checkOpenRouterStatus } from '@/lib/ai/openrouter';
+import { chatWithAI, checkAPIConfigured } from '@/lib/ai/client';
 import { AgentExecution, AgentType, AgentLog } from '@/types';
 
 // Response type
@@ -153,4 +154,61 @@ export async function getAvailableAgents(): Promise<AgentConfig[]> {
     AGENT_TEMPLATES.dataAnalyst(),
     AGENT_TEMPLATES.opsManager(),
   ];
+}
+
+/**
+ * Execute command using user's selected API from settings
+ * This reads the API config passed from the UI
+ */
+export async function executeWithUserAPI(
+  command: string,
+  apiConfig: {
+    provider: string;
+    name: string;
+    baseUrl: string;
+    apiKey: string;
+    selectedModel?: string;
+    enabled: boolean;
+  }
+): Promise<ActionResponse> {
+  try {
+    if (!apiConfig.enabled || !apiConfig.apiKey) {
+      return {
+        success: false,
+        message: `${apiConfig.name} API not configured. Please add API key in Settings.`,
+      };
+    }
+
+    // Use dynamic AI client
+    const aiResponse = await chatWithAI(command, {
+      provider: apiConfig.provider,
+      name: apiConfig.name,
+      baseUrl: apiConfig.baseUrl,
+      apiKey: apiConfig.apiKey,
+      selectedModel: apiConfig.selectedModel,
+      models: [],
+      enabled: true,
+      requiresApiKey: true,
+      color: '',
+    } as any);
+
+    return {
+      success: true,
+      message: 'Success',
+      data: {
+        id: `exec-${Date.now()}`,
+        agentId: apiConfig.provider,
+        command: command,
+        status: 'completed',
+        output: `🤖 ${apiConfig.name}:\n\n${aiResponse.response}`,
+        startTime: new Date(),
+        endTime: new Date(),
+      },
+    };
+  } catch (error) {
+    return {
+      success: false,
+      message: error instanceof Error ? error.message : 'Unknown error',
+    };
+  }
 }
