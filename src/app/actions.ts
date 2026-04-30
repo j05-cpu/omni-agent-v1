@@ -4,6 +4,7 @@
  * Digital Godfather - Agent Server Actions
  * 
  * Handles Start/Stop Agent commands from the UI.
+ * Now with REAL AI via Ollama!
  */
 
 import { 
@@ -15,6 +16,7 @@ import {
   MissionConfig
 } from '@/lib/agents/engines';
 import { saveToAgentMemory, saveSyndicateExecution, updateSyndicateExecution } from '@/lib/agents/engines/memory';
+import { chatWithOllama, checkOllamaStatus } from '@/lib/ai/ollama';
 import { AgentExecution, AgentType, AgentLog } from '@/types';
 
 // Response type
@@ -50,8 +52,28 @@ export async function executeAgentCommand(
     // Create mission
     const mission = createMission(command);
 
-    // Execute
-    const result = await executeMission(agent, mission);
+    // Execute with REAL AI (Ollama)
+    const isOllamaRunning = await checkOllamaStatus();
+    
+    let result;
+    
+    if (isOllamaRunning) {
+      // Real AI response!
+      const aiResponse = await chatWithOllama(command);
+      
+      result = {
+        id: `exec-${Date.now()}`,
+        agentId: agent.id,
+        command: command,
+        status: 'completed' as const,
+        output: `🤖 AI Response:\n\n${aiResponse.response}`,
+        startTime: new Date(),
+        endTime: new Date(),
+      };
+    } else {
+      // Fallback to simulated if Ollama not running
+      result = await executeMission(agent, mission);
+    }
 
     // Save to memory if successful
     if (result.status === 'completed') {
