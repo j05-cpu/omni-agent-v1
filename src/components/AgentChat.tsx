@@ -9,6 +9,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { useGodfatherStore } from '@/services/store';
+import { useSettingsStore } from '@/lib/stores';
 import { executeAgentCommand } from '@/app/actions';
 import { getSupabaseClient, isSupabaseConfigured } from '@/lib/supabaseClient';
 import { AgentConfig, AgentExecution, AgentLog } from '@/types';
@@ -93,6 +94,7 @@ export default function AgentChat({ className = '', onAgentSelect, defaultAgent 
   const [input, setInput] = useState('');
   const [isExecuting, setIsExecuting] = useState(false);
   const [selectedAgent, setSelectedAgent] = useState(defaultAgent);
+  const { apis } = useSettingsStore();
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const supabase = getSupabaseClient();
@@ -147,7 +149,16 @@ export default function AgentChat({ className = '', onAgentSelect, defaultAgent 
 
     try {
       // Execute agent command
-      const result = await executeAgentCommand(userMessage.content, selectedAgent as any);
+      // Get user's API config from Settings store
+      const enabledApis = apis.filter(a => a.enabled && a.apiKey);
+      const userApiConfig = enabledApis[0] ? {
+        provider: enabledApis[0].provider,
+        apiKey: enabledApis[0].apiKey || '',
+        model: enabledApis[0].selectedModel,
+        baseUrl: enabledApis[0].baseUrl,
+      } : null;
+      
+      const result = await executeAgentCommand(userMessage.content, selectedAgent as any, userApiConfig);
       
       const assistantMessage: Message = {
         id: `msg-${Date.now()}-response`,
