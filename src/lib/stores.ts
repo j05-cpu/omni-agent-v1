@@ -233,6 +233,16 @@ export const useSettingsStore = create<SettingsState>()(
           baseUrl: 'https://openrouter.ai/api/v1',
           requiresApiKey: true,
           models: [
+            // FREE Models!
+            'google/gemini-2.0-flash-exp-1219 free',
+            'google/gemini-2.0-flash-001 free',
+            'google/gemma-3-27b free',
+            'meta-llama/llama-3.3-70b-instruct free',
+            'meta-llama/llama-3.1-8b-instruct free',
+            'qwen/qwen-2.5-72b-instruct free',
+            'deepseek/deepseek-chat free',
+            'microsoft phi-4 free',
+            // Paid options
             'anthropic/claude-3.5-sonnet',
             'google/gemini-pro-1.5',
             'meta-llama/llama-3-70b-chat',
