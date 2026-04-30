@@ -18,6 +18,7 @@ import {
 import { saveToAgentMemory, saveSyndicateExecution, updateSyndicateExecution } from '@/lib/agents/engines/memory';
 import { chatWithOllama, checkOllamaStatus } from '@/lib/ai/ollama';
 import { chatWithGemini, checkGeminiStatus } from '@/lib/ai/gemini';
+import { chatWithOpenRouter, checkOpenRouterStatus } from '@/lib/ai/openrouter';
 import { AgentExecution, AgentType, AgentLog } from '@/types';
 
 // Response type
@@ -53,14 +54,28 @@ export async function executeAgentCommand(
     // Create mission
     const mission = createMission(command);
 
-    // Execute with REAL AI (Prefer Gemini > Ollama > Fallback)
+    // Execute with REAL AI (Priority: OpenRouter > Gemini > Ollama > Simulated)
+    const isOpenRouterConfigured = checkOpenRouterStatus();
     const isGeminiConfigured = checkGeminiStatus();
     const isOllamaRunning = await checkOllamaStatus();
     
     let result;
     
-    if (isGeminiConfigured) {
-      // Google Gemini - FREE cloud AI!
+    if (isOpenRouterConfigured) {
+      // OpenRouter - Multiple FREE models!
+      const aiResponse = await chatWithOpenRouter(command);
+      
+      result = {
+        id: `exec-${Date.now()}`,
+        agentId: agent.id,
+        command: command,
+        status: 'completed' as const,
+        output: `🤖 OpenRouter AI:\n\n${aiResponse.response}`,
+        startTime: new Date(),
+        endTime: new Date(),
+      };
+    } else if (isGeminiConfigured) {
+      // Google Gemini
       const aiResponse = await chatWithGemini(command);
       
       result = {
@@ -86,7 +101,7 @@ export async function executeAgentCommand(
         endTime: new Date(),
       };
     } else {
-      // Fallback to simulated
+      // Fallback
       result = await executeMission(agent, mission);
     }
 
