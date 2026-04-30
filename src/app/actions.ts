@@ -62,17 +62,33 @@ export async function executeAgentCommand(
     // Create mission
     const mission = createMission(command);
 
-    // Execute with REAL AI (Priority: OpenRouter > Gemini > Ollama > Simulated)
+    // 1. PRIORITY: User's API from Settings (if API key provided)
+    let result;
+    
+    if (userApiConfig && userApiConfig.apiKey) {
+      // Use user's API key!
+      try {
+        const aiResponse = await chatWithOpenRouter(command, { model: userApiConfig.model, apiKey: userApiConfig.apiKey });
+        result = {
+          id: `exec-${Date.now()}`,
+          agentId: agent.id,
+          command: command,
+          status: 'completed' as const,
+          output: `🤖 YOUR API:\n\n${aiResponse.response}`,
+          startTime: new Date(),
+          endTime: new Date(),
+        };
+      } catch (err) {
+        return { success: false, message: `API Error: ${err instanceof Error ? err.message : 'Unknown'}` };
+      }
+    } else {
+    // 2. Fallback: Server environment
     const isOpenRouterConfigured = checkOpenRouterStatus();
     const isGeminiConfigured = checkGeminiStatus();
     const isOllamaRunning = await checkOllamaStatus();
-    
-    let result;
-    
+
     if (isOpenRouterConfigured) {
-      // OpenRouter - Multiple FREE models!
       const aiResponse = await chatWithOpenRouter(command);
-      
       result = {
         id: `exec-${Date.now()}`,
         agentId: agent.id,
@@ -83,9 +99,7 @@ export async function executeAgentCommand(
         endTime: new Date(),
       };
     } else if (isGeminiConfigured) {
-      // Google Gemini
       const aiResponse = await chatWithGemini(command);
-      
       result = {
         id: `exec-${Date.now()}`,
         agentId: agent.id,
@@ -96,9 +110,7 @@ export async function executeAgentCommand(
         endTime: new Date(),
       };
     } else if (isOllamaRunning) {
-      // Local Ollama
       const aiResponse = await chatWithOllama(command);
-      
       result = {
         id: `exec-${Date.now()}`,
         agentId: agent.id,
@@ -109,8 +121,8 @@ export async function executeAgentCommand(
         endTime: new Date(),
       };
     } else {
-      // Fallback
       result = await executeMission(agent, mission);
+    }
     }
 
     // Save to memory if successful

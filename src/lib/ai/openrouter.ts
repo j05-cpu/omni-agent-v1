@@ -15,13 +15,17 @@ export async function chatWithOpenRouter(
   message: string,
   options?: {
     model?: string;
+    apiKey?: string; // User's API key (if provided)
   }
 ): Promise<{ response: string; done: boolean }> {
   // Default to free model
   const model = options?.model || 'google/gemini-2.0-flash-exp-1219 free';
   
-  if (!OPENROUTER_API_KEY) {
-    throw new Error('OPENROUTER_API_KEY not configured');
+  // Use user's API key if provided, otherwise server key
+  const apiKey = options?.apiKey || OPENROUTER_API_KEY;
+  
+  if (!apiKey) {
+    throw new Error('OpenRouter API key not configured. Add your key in Settings > API Hub');
   }
   
   try {
@@ -31,7 +35,7 @@ export async function chatWithOpenRouter(
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
+          'Authorization': `Bearer ${apiKey}`,
           'HTTP-Referer': 'https://digital-godfather.com',
           'X-Title': 'Digital Godfather',
         },
