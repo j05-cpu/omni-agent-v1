@@ -1,0 +1,221 @@
+'use server';
+
+/**
+ * Digital Godfather - Agent Server Actions
+ * 
+ * Handles Start/Stop Agent commands from the UI.
+ * Now with REAL AI via Ollama!
+ */
+
+import { 
+  createAgent, 
+  createMission, 
+  executeMission,
+  AGENT_TEMPLATES,
+  AgentConfig,
+  MissionConfig
+} from '@/lib/agents/engines';
+import { saveToAgentMemory, saveSyndicateExecution, updateSyndicateExecution } from '@/lib/agents/engines/memory';
+import { chatWithOllama, checkOllamaStatus } from '@/lib/ai/ollama';
+import { chatWithGemini, checkGeminiStatus } from '@/lib/ai/gemini';
+import { chatWithOpenRouter, checkOpenRouterStatus } from '@/lib/ai/openrouter';
+import { chatWithAI, checkAPIConfigured } from '@/lib/ai/client';
+import { AgentExecution, AgentType, AgentLog } from '@/types';
+
+// Response type
+interface ActionResponse {
+  success: boolean;
+  message: string;
+  data?: AgentExecution;
+}
+
+/**
+ * Execute agent command
+ * Now accepts user API config from client side!
+ */
+export async function executeAgentCommand(
+  command: string,
+  targetAgent: AgentType | 'godfather' = 'godfather',
+  userApiConfig?: {
+    provider: string;
+    apiKey: string;
+    model?: string;
+    baseUrl?: string;
+  } | null
+): Promise<ActionResponse> {
+  try {
+    // Get agent based on type
+    let agent: AgentConfig;
+    
+    switch (targetAgent) {
+      case 'openclaw':
+        agent = AGENT_TEMPLATES.researchAnalyst();
+        break;
+      case 'autogpt':
+      case 'plandex':
+        agent = AGENT_TEMPLATES.codeDeveloper();
+        break;
+      default:
+        agent = AGENT_TEMPLATES.opsManager();
+    }
+
+    // Create mission
+    const mission = createMission(command);
+
+    // Execute with REAL AI (Priority: OpenRouter > Gemini > Ollama > Simulated)
+    const isOpenRouterConfigured = checkOpenRouterStatus();
+    const isGeminiConfigured = checkGeminiStatus();
+    const isOllamaRunning = await checkOllamaStatus();
+    
+    let result;
+    
+    if (isOpenRouterConfigured) {
+      // OpenRouter - Multiple FREE models!
+      const aiResponse = await chatWithOpenRouter(command);
+      
+      result = {
+        id: `exec-${Date.now()}`,
+        agentId: agent.id,
+        command: command,
+        status: 'completed' as const,
+        output: `🤖 OpenRouter AI:\n\n${aiResponse.response}`,
+        startTime: new Date(),
+        endTime: new Date(),
+      };
+    } else if (isGeminiConfigured) {
+      // Google Gemini
+      const aiResponse = await chatWithGemini(command);
+      
+      result = {
+        id: `exec-${Date.now()}`,
+        agentId: agent.id,
+        command: command,
+        status: 'completed' as const,
+        output: `🤖 Gemini AI:\n\n${aiResponse.response}`,
+        startTime: new Date(),
+        endTime: new Date(),
+      };
+    } else if (isOllamaRunning) {
+      // Local Ollama
+      const aiResponse = await chatWithOllama(command);
+      
+      result = {
+        id: `exec-${Date.now()}`,
+        agentId: agent.id,
+        command: command,
+        status: 'completed' as const,
+        output: `🤖 Ollama AI:\n\n${aiResponse.response}`,
+        startTime: new Date(),
+        endTime: new Date(),
+      };
+    } else {
+      // Fallback
+      result = await executeMission(agent, mission);
+    }
+
+    // Save to memory if successful
+    if (result.status === 'completed') {
+      await saveToAgentMemory(
+        agent.id,
+        agent.name,
+        agent.role,
+        command,
+        result.output || ''
+      );
+    }
+
+    return {
+      success: result.status === 'completed',
+      message: result.status === 'completed' ? 'Mission completed' : 'Mission failed',
+      data: result,
+    };
+  } catch (error) {
+    return {
+      success: false,
+      message: error instanceof Error ? error.message : 'Unknown error',
+    };
+  }
+}
+
+/**
+ * Get agent status
+ */
+export async function getAgentStatus(agentType: string): Promise<{
+  status: string;
+  memory: number;
+}> {
+  return {
+    status: 'idle',
+    memory: 0,
+  };
+}
+
+/**
+ * Get available agents
+ */
+export async function getAvailableAgents(): Promise<AgentConfig[]> {
+  return [
+    AGENT_TEMPLATES.researchAnalyst(),
+    AGENT_TEMPLATES.codeDeveloper(),
+    AGENT_TEMPLATES.contentWriter(),
+    AGENT_TEMPLATES.dataAnalyst(),
+    AGENT_TEMPLATES.opsManager(),
+  ];
+}
+
+/**
+ * Execute command using user's selected API from settings
+ * This reads the API config passed from the UI
+ */
+export async function executeWithUserAPI(
+  command: string,
+  apiConfig: {
+    provider: string;
+    name: string;
+    baseUrl: string;
+    apiKey: string;
+    selectedModel?: string;
+    enabled: boolean;
+  }
+): Promise<ActionResponse> {
+  try {
+    if (!apiConfig.enabled || !apiConfig.apiKey) {
+      return {
+        success: false,
+        message: `${apiConfig.name} API not configured. Please add API key in Settings.`,
+      };
+    }
+
+    // Use dynamic AI client
+    const aiResponse = await chatWithAI(command, {
+      provider: apiConfig.provider,
+      name: apiConfig.name,
+      baseUrl: apiConfig.baseUrl,
+      apiKey: apiConfig.apiKey,
+      selectedModel: apiConfig.selectedModel,
+      models: [],
+      enabled: true,
+      requiresApiKey: true,
+      color: '',
+    } as any);
+
+    return {
+      success: true,
+      message: 'Success',
+      data: {
+        id: `exec-${Date.now()}`,
+        agentId: apiConfig.provider,
+        command: command,
+        status: 'completed',
+        output: `🤖 ${apiConfig.name}:\n\n${aiResponse.response}`,
+        startTime: new Date(),
+        endTime: new Date(),
+      },
+    };
+  } catch (error) {
+    return {
+      success: false,
+      message: error instanceof Error ? error.message : 'Unknown error',
+    };
+  }
+}
