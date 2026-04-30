@@ -3,6 +3,7 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { GlassCard, GlassButton, GlassInput } from './GlassComponents';
+import AgentChat from './AgentChat';
 import { useSettingsStore, useKnowledgeStore, useSkillsStore, useChatStore } from '@/lib/stores';
 import { 
   Home, Users, GraduationCap, ShoppingBag, Settings as SettingsIcon,
