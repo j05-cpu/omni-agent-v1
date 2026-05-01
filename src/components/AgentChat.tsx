@@ -149,6 +149,7 @@ export default function AgentChat({ className = '', onAgentSelect, defaultAgent 
 
     try {
       // Execute agent command
+<<<<<<< HEAD
       // Get user's API config from Settings store
       const enabledApis = apis.filter(a => a.enabled && a.apiKey);
       const userApiConfig = enabledApis[0] ? {
@@ -157,6 +158,18 @@ export default function AgentChat({ className = '', onAgentSelect, defaultAgent 
         model: enabledApis[0].selectedModel,
         baseUrl: enabledApis[0].baseUrl,
       } : null;
+=======
+      // Get user's API config from Settings store (ANY API with key!)
+      const enabledApis = apis.filter(a => a.apiKey && a.apiKey.length > 10);
+      console.log('Available APIs with key:', enabledApis.map(a => ({ p: a.provider, key: a.apiKey?.slice(0,10), enabled: a.enabled })));
+      const userApiConfig = enabledApis[0] ? {
+        provider: enabledApis[0].provider,
+        apiKey: enabledApis[0].apiKey || '',
+        model: enabledApis[0].selectedModel || enabledApis[0].models[0],
+        baseUrl: enabledApis[0].baseUrl,
+      } : null;
+      console.log('Using API config:', userApiConfig);
+>>>>>>> origin/digital-godfather-platform
       
       const result = await executeAgentCommand(userMessage.content, selectedAgent as any, userApiConfig);
       
