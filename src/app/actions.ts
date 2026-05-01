@@ -62,6 +62,35 @@ export async function executeAgentCommand(
     // Create mission
     const mission = createMission(command);
 
+<<<<<<< HEAD
+    // 1. PRIORITY: User's API from Settings (if API key provided)
+    let result;
+    
+    if (userApiConfig && userApiConfig.apiKey) {
+      // Use user's API key!
+      try {
+        const aiResponse = await chatWithOpenRouter(command, { model: userApiConfig.model, apiKey: userApiConfig.apiKey });
+        result = {
+          id: `exec-${Date.now()}`,
+          agentId: agent.id,
+          command: command,
+          status: 'completed' as const,
+          output: `🤖 YOUR API:\n\n${aiResponse.response}`,
+          startTime: new Date(),
+          endTime: new Date(),
+        };
+      } catch (err) {
+        return { success: false, message: `API Error: ${err instanceof Error ? err.message : 'Unknown'}` };
+      }
+    } else {
+    // 2. Fallback: Server environment
+    const isOpenRouterConfigured = checkOpenRouterStatus();
+    const isGeminiConfigured = checkGeminiStatus();
+    const isOllamaRunning = await checkOllamaStatus();
+
+    if (isOpenRouterConfigured) {
+      const aiResponse = await chatWithOpenRouter(command);
+=======
     // Execute with REAL AI (Priority: OpenRouter > Gemini > Ollama > Simulated)
     const isOpenRouterConfigured = checkOpenRouterStatus();
     const isGeminiConfigured = checkGeminiStatus();
@@ -73,6 +102,7 @@ export async function executeAgentCommand(
       // OpenRouter - Multiple FREE models!
       const aiResponse = await chatWithOpenRouter(command);
       
+>>>>>>> origin/digital-godfather-platform
       result = {
         id: `exec-${Date.now()}`,
         agentId: agent.id,
@@ -83,9 +113,13 @@ export async function executeAgentCommand(
         endTime: new Date(),
       };
     } else if (isGeminiConfigured) {
+<<<<<<< HEAD
+      const aiResponse = await chatWithGemini(command);
+=======
       // Google Gemini
       const aiResponse = await chatWithGemini(command);
       
+>>>>>>> origin/digital-godfather-platform
       result = {
         id: `exec-${Date.now()}`,
         agentId: agent.id,
@@ -96,9 +130,13 @@ export async function executeAgentCommand(
         endTime: new Date(),
       };
     } else if (isOllamaRunning) {
+<<<<<<< HEAD
+      const aiResponse = await chatWithOllama(command);
+=======
       // Local Ollama
       const aiResponse = await chatWithOllama(command);
       
+>>>>>>> origin/digital-godfather-platform
       result = {
         id: `exec-${Date.now()}`,
         agentId: agent.id,
@@ -109,9 +147,15 @@ export async function executeAgentCommand(
         endTime: new Date(),
       };
     } else {
+<<<<<<< HEAD
+      result = await executeMission(agent, mission);
+    }
+    }
+=======
       // Fallback
       result = await executeMission(agent, mission);
     }
+>>>>>>> origin/digital-godfather-platform
 
     // Save to memory if successful
     if (result.status === 'completed') {
